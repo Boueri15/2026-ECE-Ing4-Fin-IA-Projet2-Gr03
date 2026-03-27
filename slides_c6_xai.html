@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C.6 — Credit Scoring XAI | ECE Paris 2026</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --navy: #0d1b2a;
+    --blue: #1b4f8a;
+    --accent: #00c2ff;
+    --green: #00e5a0;
+    --red: #ff4757;
+    --orange: #ffa502;
+    --white: #f0f4ff;
+    --gray: #8899aa;
+    --card: #131f30;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Space Grotesk', sans-serif;
+    background: var(--navy);
+    color: var(--white);
+    overflow-x: hidden;
+  }
+
+  .slide {
+    min-height: 100vh;
+    padding: 48px 64px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .slide::before {
+    content: '';
+    position: absolute;
+    top: -200px; right: -200px;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(0, 194, 255, 0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .slide-number {
+    position: absolute;
+    bottom: 24px; right: 32px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--gray);
+    letter-spacing: 2px;
+  }
+
+  /* Slide 1 — Titre */
+  .slide-hero {
+    background: linear-gradient(135deg, #0a1628 0%, #0d1b2a 50%, #0a1f3c 100%);
+    text-align: center;
+    gap: 20px;
+  }
+
+  .badge {
+    display: inline-block;
+    background: rgba(0,194,255,0.12);
+    border: 1px solid rgba(0,194,255,0.3);
+    border-radius: 100px;
+    padding: 6px 20px;
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  h1.hero-title {
+    font-size: clamp(2.5rem, 5vw, 4.5rem);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -1px;
+    background: linear-gradient(90deg, var(--white) 0%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 24px;
+  }
+
+  .hero-subtitle {
+    font-size: 1.3rem;
+    color: var(--gray);
+    font-weight: 300;
+    max-width: 600px;
+    margin: 0 auto 40px;
+    line-height: 1.6;
+  }
+
+  .hero-tags {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    background: var(--card);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .tag.green { border-color: rgba(0,229,160,0.3); color: var(--green); }
+  .tag.blue { border-color: rgba(0,194,255,0.3); color: var(--accent); }
+  .tag.orange { border-color: rgba(255,165,2,0.3); color: var(--orange); }
+
+  /* Section headers */
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 12px;
+  }
+
+  h2.slide-title {
+    font-size: clamp(2rem, 3.5vw, 3rem);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.5px;
+    margin-bottom: 40px;
+  }
+
+  h2.slide-title span { color: var(--accent); }
+
+  /* Grid layouts */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 28px;
+    transition: border-color 0.2s;
+  }
+
+  .card:hover { border-color: rgba(0,194,255,0.2); }
+
+  .card-icon {
+    font-size: 2rem;
+    margin-bottom: 12px;
+  }
+
+  .card h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--white);
+  }
+
+  .card p {
+    font-size: 0.88rem;
+    color: var(--gray);
+    line-height: 1.6;
+  }
+
+  .card .metric {
+    font-family: 'DM Mono', monospace;
+    font-size: 2.2rem;
+    font-weight: 500;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  .card .metric-label {
+    font-size: 0.8rem;
+    color: var(--gray);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* Pipeline */
+  .pipeline {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .pipeline-step {
+    background: var(--card);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 16px 20px;
+    text-align: center;
+    min-width: 120px;
+    flex: 1;
+  }
+
+  .pipeline-step .step-icon { font-size: 1.6rem; margin-bottom: 6px; }
+  .pipeline-step .step-name { font-size: 0.78rem; font-weight: 600; color: var(--white); }
+  .pipeline-step .step-desc { font-size: 0.7rem; color: var(--gray); margin-top: 4px; }
+
+  .pipeline-arrow {
+    color: var(--accent);
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  /* Code block */
+  .code-block {
+    background: #0a1122;
+    border: 1px solid rgba(0,194,255,0.15);
+    border-radius: 12px;
+    padding: 24px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+    line-height: 1.7;
+    color: #a8c7ff;
+    overflow-x: auto;
+  }
+
+  .code-block .kw { color: #c792ea; }
+  .code-block .fn { color: #82aaff; }
+  .code-block .str { color: #c3e88d; }
+  .code-block .cm { color: #546e7a; }
+  .code-block .num { color: #f78c6c; }
+
+  /* Feature importance visual */
+  .feat-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .feat-name {
+    font-size: 0.85rem;
+    width: 200px;
+    color: var(--white);
+    flex-shrink: 0;
+  }
+
+  .feat-bar-fill {
+    height: 22px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--accent), var(--blue));
+    min-width: 4px;
+    display: flex;
+    align-items: center;
+    padding-right: 8px;
+  }
+
+  .feat-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--navy);
+    font-weight: 600;
+  }
+
+  /* Comparison table */
+  table.comparison {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+
+  table.comparison th {
+    background: rgba(0,194,255,0.1);
+    color: var(--accent);
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 1px solid rgba(0,194,255,0.2);
+  }
+
+  table.comparison td {
+    padding: 11px 16px;
+    color: var(--gray);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  table.comparison tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .pill {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .pill.green { background: rgba(0,229,160,0.15); color: var(--green); }
+  .pill.red { background: rgba(255,71,87,0.15); color: var(--red); }
+  .pill.orange { background: rgba(255,165,2,0.15); color: var(--orange); }
+  .pill.blue { background: rgba(0,194,255,0.15); color: var(--accent); }
+
+  /* Fairness diagram */
+  .fairness-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+
+  .fairness-card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid rgba(255,255,255,0.06);
+    text-align: center;
+  }
+
+  .fairness-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.8rem;
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+
+  .fairness-label {
+    font-size: 0.75rem;
+    color: var(--gray);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* RGPD box */
+  .rgpd-box {
+    background: linear-gradient(135deg, rgba(0,194,255,0.05), rgba(0,229,160,0.05));
+    border: 1px solid rgba(0,194,255,0.2);
+    border-radius: 16px;
+    padding: 32px;
+    margin-top: 24px;
+  }
+
+  .rgpd-box h3 {
+    color: var(--accent);
+    font-size: 1rem;
+    margin-bottom: 12px;
+  }
+
+  .rgpd-box p {
+    font-size: 0.9rem;
+    color: var(--gray);
+    line-height: 1.7;
+  }
+
+  /* Conclusion */
+  .conclusion-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .conclusion-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    background: var(--card);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .conclusion-list li .check {
+    font-size: 1.4rem;
+    flex-shrink: 0;
+  }
+
+  .conclusion-list li .text strong {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .conclusion-list li .text span {
+    font-size: 0.85rem;
+    color: var(--gray);
+  }
+
+  /* ECE footer */
+  .ece-footer {
+    position: absolute;
+    bottom: 24px;
+    left: 64px;
+    font-size: 12px;
+    color: var(--gray);
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 1px;
+  }
+
+  /* Shap waterfall mock */
+  .shap-mock {
+    background: #0a1122;
+    border-radius: 12px;
+    padding: 24px;
+    border: 1px solid rgba(0,194,255,0.1);
+  }
+
+  .shap-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 0.82rem;
+  }
+
+  .shap-feature { width: 180px; color: var(--gray); flex-shrink: 0; }
+  .shap-bar-neg {
+    height: 18px;
+    background: linear-gradient(90deg, #ff4757, #ff6b81);
+    border-radius: 3px;
+    margin-left: auto;
+  }
+  .shap-bar-pos {
+    height: 18px;
+    background: linear-gradient(90deg, #00e5a0, #00c2ff);
+    border-radius: 3px;
+  }
+  .shap-value { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--gray); width: 60px; text-align: right; }
+
+  @media print {
+    .slide { page-break-after: always; min-height: 100vh; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 1 — TITRE
+═══════════════════════════════════════════════════════ -->
+<section class="slide slide-hero">
+  <div class="badge">ECE Paris — Ing4 — Groupe C.6</div>
+  <h1 class="hero-title">Credit Scoring<br>avec IA Explicable</h1>
+  <p class="hero-subtitle">
+    Comment prendre des décisions de crédit automatisées<br>
+    qui restent compréhensibles, équitables et conformes au RGPD ?
+  </p>
+  <div class="hero-tags">
+    <span class="tag green">XGBoost · LightGBM</span>
+    <span class="tag blue">SHAP · LIME · DiCE</span>
+    <span class="tag orange">Fairlearn · RGPD Art.22</span>
+  </div>
+  <div class="slide-number">01 / 10</div>
+  <div class="ece-footer">2026 · IA Probabiliste, Théorie des Jeux et ML</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 2 — CONTEXTE & ENJEUX
+═══════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="section-label">Contexte</div>
+  <h2 class="slide-title">Pourquoi l'<span>explicabilité</span> est-elle cruciale ?</h2>
+  
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-icon">⚖️</div>
+      <h3>RGPD — Article 22</h3>
+      <p>Tout client a le <strong>droit à une explication</strong> lorsqu'une décision automatisée le concerne. Sans explicabilité → illégal en Europe.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🎯</div>
+      <h3>Confiance & Adoption</h3>
+      <p>Un modèle opaque est refusé par les équipes métier. Les banques ont besoin de <strong>valider les décisions</strong> avant déploiement.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">⚠️</div>
+      <h3>Biais Algorithmiques</h3>
+      <p>Les modèles ML peuvent <strong>discriminer</strong> sur l'âge ou le genre — violation du droit anti-discrimination européen.</p>
+    </div>
+  </div>
+
+  <div class="rgpd-box">
+    <h3>📜 RGPD Article 22 — Décision automatisée</h3>
+    <p>"Toute personne a le droit de ne pas faire l'objet d'une décision fondée exclusivement sur un traitement automatisé [...] produisant des effets juridiques la concernant ou l'affectant de manière significative de façon similaire."</p>
+    <p style="margin-top:12px; color: var(--accent);">→ Notre solution : Chaque décision de crédit est accompagnée d'une explication SHAP basée sur la théorie des jeux coopératifs.</p>
+  </div>
+  <div class="slide-number">02 / 10</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 3 — DATASET & PIPELINE
+═══════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="section-label">Données & Architecture</div>
+  <h2 class="slide-title">German Credit Dataset &amp; <span>Pipeline ML</span></h2>
+  
+  <div class="grid-2" style="margin-bottom: 32px;">
+    <div class="card">
+      <h3>📦 German Credit Dataset (UCI)</h3>
+      <p style="margin-bottom: 16px;">Dataset de référence pour le crédit scoring, utilisé dans des centaines de publications académiques.</p>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px;">
+        <div><div class="metric">1 000</div><div class="metric-label">Clients</div></div>
+        <div><div class="metric">20</div><div class="metric-label">Features</div></div>
+        <div><div class="metric">70%</div><div class="metric-label">Bons crédits</div></div>
+        <div><div class="metric">30%</div><div class="metric-label">Mauvais crédits</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>🔧 Prétraitement</h3>
+      <p>Gestion du déséquilibre de classes et encodage des variables catégorielles.</p>
+      <ul style="margin-top:12px; padding-left: 18px; color: var(--gray); font-size: 0.88rem; line-height: 2;">
+        <li><strong style="color:var(--white)">OrdinalEncoder</strong> → variables catégorielles (20 features)</li>
+        <li><strong style="color:var(--white)">SMOTE</strong> → rééchantillonnage (70/30 → 50/50)</li>
+        <li><strong style="color:var(--white)">StandardScaler</strong> → pour Régression Logistique</li>
+        <li><strong style="color:var(--white)">StratifiedSplit</strong> → train 80% / test 20%</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="pipeline">
+    <div class="pipeline-step">
+      <div class="step-icon">📥</div>
+      <div class="step-name">Données</div>
+      <div class="step-desc">German Credit UCI</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-step">
+      <div class="step-icon">🔧</div>
+      <div class="step-name">Preprocessing</div>
+      <div class="step-desc">Encode + SMOTE</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-step">
+      <div class="step-icon">🤖</div>
+      <div class="step-name">Modèles</div>
+      <div class="step-desc">XGB + LGBM + LR</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-step">
+      <div class="step-icon">🔍</div>
+      <div class="step-name">SHAP + LIME</div>
+      <div class="step-desc">Explicabilité</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-step">
+      <div class="step-icon">🔄</div>
+      <div class="step-name">Contrefactuels</div>
+      <div class="step-desc">DiCE</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-step">
+      <div class="step-icon">⚖️</div>
+      <div class="step-name">Fairness</div>
+      <div class="step-desc">Fairlearn</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-step">
+      <div class="step-icon">🖥️</div>
+      <div class="step-name">Dashboard</div>
+      <div class="step-desc">Gradio</div>
+    </div>
+  </div>
+  <div class="slide-number">03 / 10</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 4 — PERFORMANCE DES MODÈLES
+═══════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="section-label">Modèles ML</div>
+  <h2 class="slide-title">Performance des <span>4 modèles</span></h2>
+  
+  <table class="comparison" style="margin-bottom: 32px;">
+    <thead>
+      <tr>
+        <th>Modèle</th>
+        <th>Type</th>
+        <th>AUC-ROC</th>
+        <th>Accuracy</th>
+        <th>F1-Score</th>
+        <th>Explicabilité</th>
+        <th>RGPD</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong style="color:var(--white)">XGBoost ⭐</strong></td>
+        <td><span class="pill orange">Boîte Noire</span></td>
+        <td style="color:var(--green); font-family: 'DM Mono', monospace;"><strong>~0.800</strong></td>
+        <td style="font-family: 'DM Mono', monospace;">~0.760</td>
+        <td style="font-family: 'DM Mono', monospace;">~0.840</td>
+        <td>SHAP (post-hoc)</td>
+        <td><span class="pill orange">Partielle</span></td>
+      </tr>
+      <tr>
+        <td><strong style="color:var(--white)">LightGBM</strong></td>
+        <td><span class="pill orange">Boîte Noire</span></td>
+        <td style="font-family: 'DM Mono', monospace;">~0.790</td>
+        <td style="font-family: 'DM Mono', monospace;">~0.750</td>
+        <td style="font-family: 'DM Mono', monospace;">~0.830</td>
+        <td>SHAP (post-hoc)</td>
+        <td><span class="pill orange">Partielle</span></td>
+      </tr>
+      <tr>
+        <td><strong style="color:var(--white)">Régression Log.</strong></td>
+        <td><span class="pill green">Interprétable</span></td>
+        <td style="font-family: 'DM Mono', monospace;">~0.740</td>
+        <td style="font-family: 'DM Mono', monospace;">~0.710</td>
+        <td style="font-family: 'DM Mono', monospace;">~0.800</td>
+        <td>Coefficients directs</td>
+        <td><span class="pill green">Directe</span></td>
+      </tr>
+      <tr>
+        <td><strong style="color:var(--white)">Arbre (d=5)</strong></td>
+        <td><span class="pill green">Interprétable</span></td>
+        <td style="font-family: 'DM Mono', monospace;">~0.720</td>
+        <td style="font-family: 'DM Mono', monospace;">~0.700</td>
+        <td style="font-family: 'DM Mono', monospace;">~0.780</td>
+        <td>Règles IF-THEN</td>
+        <td><span class="pill green">Directe</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="card" style="background: linear-gradient(135deg, var(--card), #0f2040);">
+    <h3>💡 Choix : XGBoost + SHAP</h3>
+    <p>XGBoost offre le meilleur AUC (~0.80) et est parfaitement compatible avec TreeSHAP — un algorithme exact en O(TLD²) garantissant des explications cohérentes. C'est la combinaison recommandée pour un environnement réglementé.</p>
+  </div>
+  <div class="slide-number">04 / 10</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 5 — SHAP
+═══════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="section-label">Explicabilité — Niveau Minimum</div>
+  <h2 class="slide-title"><span>SHAP</span> — Shapley Values</h2>
+
+  <div class="grid-2">
+    <div>
+      <div class="card" style="margin-bottom: 20px;">
+        <h3>📐 Formule de Shapley (1953)</h3>
+        <div class="code-block" style="margin-top: 12px;">
+<span class="cm"># Contribution marginale moyenne de i</span>
+φᵢ = Σ [|S|!(n-|S|-1)!/n!]
+     × [v(S∪{i}) - v(S)]
+
+<span class="cm"># Propriétés garanties :</span>
+<span class="cm"># ✅ Efficience : Σφᵢ = f(x) - E[f(x)]</span>
+<span class="cm"># ✅ Symétrie : features identiques → même φ</span>
+<span class="cm"># ✅ Nullité : feature inutile → φ = 0</span>
+        </div>
+      </div>
+      <div class="card">
+        <h3>🏆 Top Features (SHAP Globale)</h3>
+        <div style="margin-top: 12px;">
+          <div class="feat-bar">
+            <span class="feat-name">Statut compte courant</span>
+            <div class="feat-bar-fill" style="width: 160px;"><span class="feat-val">0.142</span></div>
+          </div>
+          <div class="feat-bar">
+            <span class="feat-name">Durée du crédit</span>
+            <div class="feat-bar-fill" style="width: 130px;"><span class="feat-val">0.115</span></div>
+          </div>
+          <div class="feat-bar">
+            <span class="feat-name">Historique de crédit</span>
+            <div class="feat-bar-fill" style="width: 110px;"><span class="feat-val">0.097</span></div>
+          </div>
+          <div class="feat-bar">
+            <span class="feat-name">Montant du crédit</span>
+            <div class="feat-bar-fill" style="width: 90px;"><span class="feat-val">0.079</span></div>
+          </div>
+          <div class="feat-bar">
+            <span class="feat-name">Épargne</span>
+            <div class="feat-bar-fill" style="width: 70px;"><span class="feat-val">0.063</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="height: 100%;">
+        <h3>🔍 Explication locale — Client REFUSÉ</h3>
+        <p style="font-size: 0.82rem; margin-bottom: 16px;">Waterfall plot : décomposition de la prédiction feature par feature</p>
+        <div class="shap-mock">
+          <div style="font-family:'DM Mono',monospace; font-size:11px; color:var(--gray); margin-bottom:12px;">
+            Base value: 0.700 → Prédiction finale: 0.23 (REFUSÉ)
+          </div>
+          <div class="shap-row">
+            <span class="shap-feature">Statut compte: &lt;0</span>
+            <div class="shap-bar-neg" style="width: 90px;"></div>
+            <span class="shap-value" style="color:var(--red)">-0.182</span>
+          </div>
+          <div class="shap-row">
+            <span class="shap-feature">Durée: 48 mois</span>
+            <div class="shap-bar-neg" style="width: 60px;"></div>
+            <span class="shap-value" style="color:var(--red)">-0.121</span>
+          </div>
+          <div class="shap-row">
+            <span class="shap-feature">Montant: 12k DM</span>
+            <div class="shap-bar-neg" style="width: 45px;"></div>
+            <span class="shap-value" style="color:var(--red)">-0.091</span>
+          </div>
+          <div class="shap-row">
+            <span class="shap-feature">Historique: critique</span>
+            <div class="shap-bar-neg" style="width: 35px;"></div>
+            <span class="shap-value" style="color:var(--red)">-0.070</span>
+          </div>
+          <div class="shap-row">
+            <span class="shap-feature">Épargne: aucune</span>
+            <div class="shap-bar-neg" style="width: 25px;"></div>
+            <span class="shap-value" style="color:var(--red)">-0.050</span>
+          </div>
+          <div class="shap-row" style="margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 8px;">
+            <span class="shap-feature">Age: 35 ans</span>
+            <div class="shap-bar-pos" style="width: 30px;"></div>
+            <span class="shap-value" style="color:var(--green)">+0.060</span>
+          </div>
+          <div class="shap-row">
+            <span class="shap-feature">Emploi: 4+ ans</span>
+            <div class="shap-bar-pos" style="width: 20px;"></div>
+            <span class="shap-value" style="color:var(--green)">+0.040</span>
+          </div>
+        </div>
+        <p style="font-size:0.78rem; color:var(--gray); margin-top: 12px;">
+          → Rouge = facteur défavorable | Vert = facteur favorable
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">05 / 10</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 6 — SHAP vs LIME + CONTREFACTUELS
+═══════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="section-label">Explicabilité — Niveau Bon</div>
+  <h2 class="slide-title">SHAP vs LIME &amp; <span>Contrefactuels</span></h2>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>📊 SHAP vs LIME — Comparaison</h3>
+      <table class="comparison" style="margin-top: 16px; font-size: 0.82rem;">
+        <thead>
+          <tr><th>Critère</th><th>SHAP</th><th>LIME</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Fondement</td><td style="color:var(--white)">Théorie des jeux</td><td style="color:var(--white)">Régression locale</td></tr>
+          <tr><td>Portée</td><td style="color:var(--green)">Global + Local</td><td style="color:var(--orange)">Local seulement</td></tr>
+          <tr><td>Cohérence</td><td><span class="pill green">✅ Garantie</span></td><td><span class="pill red">❌ Non garantie</span></td></tr>
+          <tr><td>Stabilité</td><td><span class="pill green">✅ Stable</span></td><td><span class="pill orange">⚠️ Variable</span></td></tr>
+          <tr><td>Vitesse</td><td style="color:var(--gray)">TreeSHAP: rapide</td><td><span class="pill green">✅ Très rapide</span></td></tr>
+          <tr><td>Interprétation</td><td style="color:var(--white)">Contribution marginale</td><td style="color:var(--white)">Règle linéaire</td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top: 16px; font-size: 0.82rem; color: var(--gray);">
+        <strong style="color:var(--accent)">Verdict :</strong> SHAP pour les audits réglementaires (propriétés mathématiques garanties), LIME pour l'explication rapide au client.
+      </p>
+    </div>
+    <div class="card">
+      <h3>🔄 Contrefactuels DiCE — "Que changer ?"</h3>
+      <p style="font-size: 0.85rem; margin-bottom: 20px; color: var(--gray);">
+        Le client est refusé. DiCE génère le scénario alternatif minimal pour inverser la décision.
+      </p>
+      <div style="background: #0a1122; border-radius: 10px; padding: 20px; font-size: 0.83rem;">
+        <div style="color: var(--red); margin-bottom: 12px; font-weight: 600;">
+          🚫 Profil actuel → REFUSÉ (score: 23%)
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-family: 'DM Mono', monospace; font-size: 0.78rem; color: var(--gray);">
+          <span>Durée :</span><span style="color:var(--white)">48 mois</span>
+          <span>Montant :</span><span style="color:var(--white)">12 000 DM</span>
+          <span>Épargne :</span><span style="color:var(--white)">Aucune</span>
+        </div>
+        <div style="border-top: 1px solid rgba(255,255,255,0.08); margin: 16px 0;"></div>
+        <div style="color: var(--green); margin-bottom: 12px; font-weight: 600;">
+          ✅ Scénario alternatif → ACCEPTÉ
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-family: 'DM Mono', monospace; font-size: 0.78rem;">
+          <span style="color: var(--gray)">Durée :</span>
+          <span style="color: var(--green)">36 mois ✏️</span>
+          <span style="color: var(--gray)">Montant :</span>
+          <span style="color: var(--green)">8 000 DM ✏️</span>
+          <span style="color: var(--gray)">Épargne :</span>
+          <span style="color: var(--gray)">Aucune (inchangé)</span>
+        </div>
+        <div style="margin-top: 16px; font-size: 0.78rem; color: var(--accent);">
+          → 2 changements suffisent pour être accepté
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">06 / 10</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 7 — ANALYSE DE BIAIS
+═══════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="section-label">Analyse de Biais — Niveau Bon</div>
+  <h2 class="slide-title">Biais Âge &amp; <span>Genre</span></h2>
+
+  <div class="grid-2" style="margin-bottom: 24px;">
+    <div class="card">
+      <h3>📐 Disparate Impact Ratio</h3>
+      <p style="font-size: 0.85rem; margin-bottom: 16px; color: var(--gray);">
+        Règle des 4/5 (EEOC) : DIR &lt; 0.8 = discrimination légale
+      </p>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #0a1122; padding: 12px 16px; border-radius: 8px;">
+          <span style="font-size: 0.85rem;">&lt;25 ans</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 60px; height: 6px; background: var(--red); border-radius: 3px;"></div>
+            <span style="font-family:'DM Mono',monospace; color: var(--red);">0.68 ⚠️</span>
+          </div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #0a1122; padding: 12px 16px; border-radius: 8px;">
+          <span style="font-size: 0.85rem;">25-35 ans</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 80px; height: 6px; background: var(--orange); border-radius: 3px;"></div>
+            <span style="font-family:'DM Mono',monospace; color: var(--orange);">0.85 ✅</span>
+          </div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #0a1122; padding: 12px 16px; border-radius: 8px;">
+          <span style="font-size: 0.85rem;">35-60 ans</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 100px; height: 6px; background: var(--green); border-radius: 3px;"></div>
+            <span style="font-family:'DM Mono',monospace; color: var(--green);">1.05 ✅</span>
+          </div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #0a1122; padding: 12px 16px; border-radius: 8px;">
+          <span style="font-size: 0.85rem;">&gt;60 ans</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 85px; height: 6px; background: var(--green); border-radius: 3px;"></div>
+            <span style="font-family:'DM Mono',monospace; color: var(--green);">0.92 ✅</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>⚖️ Métriques de Fairness par Genre</h3>
+      <div class="fairness-grid" style="grid-template-columns: 1fr 1fr; margin-top: 16px;">
+        <div class="fairness-card">
+          <div class="fairness-val" style="color: var(--accent);">0.08</div>
+          <div class="fairness-label">Dem. Parity Diff</div>
+          <div style="margin-top: 6px;"><span class="pill green">✅ OK</span></div>
+        </div>
+        <div class="fairness-card">
+          <div class="fairness-val" style="color: var(--green);">0.12</div>
+          <div class="fairness-label">Equal. Odds Diff</div>
+          <div style="margin-top: 6px;"><span class="pill orange">⚠️ Léger</span></div>
+        </div>
+        <div class="fairness-card">
+          <div class="fairness-val" style="color: var(--white);">0.76</div>
+          <div class="fairness-label">AUC Homme</div>
+        </div>
+        <div class="fairness-card">
+          <div class="fairness-val" style="color: var(--white);">0.74</div>
+          <div class="fairness-label">AUC Femme</div>
+        </div>
+      </div>
+      <p style="font-size:0.82rem; color:var(--gray); margin-top: 16px;">
+        <strong style="color:var(--orange)">Conclusion :</strong> Le modèle discrimine légèrement les jeunes (&lt;25 ans). Solution : ThresholdOptimizer (Fairlearn) réduit l'Equalized Odds Difference sans ré-entraîner le modèle.
+      </p>
+    </div>
+  </div>
+  <div class="slide-number">07 / 10</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 8 — FAIRNESS AUDIT
+═══════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="section-label">Audit Fairness — Niveau Excellent</div>
+  <h2 class="slide-title">Equalized Odds &amp; <span>Mitigation</span></h2>
+
+  <div class="grid-2">
+    <div>
+      <div class="card" style="margin-bottom: 20px;">
+        <h3>📐 Equalized Odds</h3>
+        <p style="font-size: 0.85rem; color: var(--gray); margin-bottom: 12px;">Un modèle équitable a le même TPR et FPR pour tous les groupes.</p>
+        <div class="code-block">
+<span class="cm"># Définition formelle</span>
+P(Ŷ=1|Y=y, A=0) = P(Ŷ=1|Y=y, A=1)
+                     ∀ y ∈ {0, 1}
+
+<span class="cm"># Notre implémentation (Fairlearn)</span>
+<span class="kw">from</span> fairlearn.postprocessing <span class="kw">import</span> \
+    ThresholdOptimizer
+
+optimizer = <span class="fn">ThresholdOptimizer</span>(
+    estimator=xgb_model,
+    constraints=<span class="str">"equalized_odds"</span>,
+    objective=<span class="str">"balanced_accuracy_score"</span>
+)
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>📊 Avant vs Après Mitigation</h3>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+        <div style="background: rgba(255,71,87,0.08); border: 1px solid rgba(255,71,87,0.2); border-radius: 12px; padding: 20px; text-align: center;">
+          <div style="font-size: 0.82rem; color: var(--gray); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">Avant</div>
+          <div style="font-family:'DM Mono',monospace; font-size: 1.8rem; color: var(--red);">0.22</div>
+          <div style="font-size: 0.75rem; color: var(--gray);">Equalized Odds Δ</div>
+          <div style="margin-top: 12px; font-family:'DM Mono',monospace; font-size: 1.4rem; color: var(--white);">0.76</div>
+          <div style="font-size: 0.75rem; color: var(--gray);">Accuracy</div>
+        </div>
+        <div style="background: rgba(0,229,160,0.08); border: 1px solid rgba(0,229,160,0.2); border-radius: 12px; padding: 20px; text-align: center;">
+          <div style="font-size: 0.82rem; color: var(--gray); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">Après</div>
+          <div style="font-family:'DM Mono',monospace; font-size: 1.8rem; color: var(--green);">0.08</div>
+          <div style="font-size: 0.75rem; color: var(--gray);">Equalized Odds Δ</div>
+          <div style="margin-top: 12px; font-family:'DM Mono',monospace; font-size: 1.4rem; color: var(--white);">0.73</div>
+          <div style="font-size: 0.75rem; color: var(--gray);">Accuracy</div>
+        </div>
+      </div>
+      <div style="margin-top: 16px; background: rgba(0,194,255,0.06); border-radius: 8px; padding: 14px; font-size: 0.83rem; color: var(--gray);">
+        <strong style="color: var(--accent)">Trade-off :</strong> −0.14 d'Equalized Odds (−64%) pour −0.03 d'accuracy (−4%). Un compromis acceptable pour la conformité réglementaire.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">08 / 10</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 9 — DASHBOARD
+═══════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="section-label">Dashboard Interactif — Niveau Excellent</div>
+  <h2 class="slide-title">Interface <span>Gradio</span> — Conseiller Bancaire</h2>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>🖥️ Fonctionnalités du Dashboard</h3>
+      <ul style="list-style: none; margin-top: 16px; display: flex; flex-direction: column; gap: 10px;">
+        <li style="display:flex; gap:12px; align-items:flex-start; font-size:0.88rem;">
+          <span style="color:var(--green); font-size:1.1rem;">✅</span>
+          <div><strong>Saisie du profil client</strong><br><span style="color:var(--gray)">20 champs (sliders + dropdowns) correspondant aux features du dataset</span></div>
+        </li>
+        <li style="display:flex; gap:12px; align-items:flex-start; font-size:0.88rem;">
+          <span style="color:var(--green); font-size:1.1rem;">✅</span>
+          <div><strong>Décision temps-réel</strong><br><span style="color:var(--gray)">Score de crédit (0-100%) + ACCEPTÉ / REFUSÉ</span></div>
+        </li>
+        <li style="display:flex; gap:12px; align-items:flex-start; font-size:0.88rem;">
+          <span style="color:var(--green); font-size:1.1rem;">✅</span>
+          <div><strong>Explication SHAP automatique</strong><br><span style="color:var(--gray)">Waterfall plot généré à la volée pour chaque client</span></div>
+        </li>
+        <li style="display:flex; gap:12px; align-items:flex-start; font-size:0.88rem;">
+          <span style="color:var(--green); font-size:1.1rem;">✅</span>
+          <div><strong>Top 5 facteurs</strong><br><span style="color:var(--gray)">Résumé textuel des facteurs favorables et défavorables</span></div>
+        </li>
+        <li style="display:flex; gap:12px; align-items:flex-start; font-size:0.88rem;">
+          <span style="color:var(--green); font-size:1.1rem;">✅</span>
+          <div><strong>Conformité RGPD</strong><br><span style="color:var(--gray)">Mention explicite Article 22 dans l'interface</span></div>
+        </li>
+      </ul>
+    </div>
+    <div class="card" style="background: #080f1c; font-family: 'DM Mono', monospace; font-size: 0.78rem;">
+      <div style="display:flex; gap:6px; margin-bottom:16px;">
+        <div style="width:10px;height:10px;border-radius:50%;background:#ff4757;"></div>
+        <div style="width:10px;height:10px;border-radius:50%;background:#ffa502;"></div>
+        <div style="width:10px;height:10px;border-radius:50%;background:#2ed573;"></div>
+        <span style="color:var(--gray); margin-left:8px;">Credit Scoring XAI — localhost:7860</span>
+      </div>
+      <div style="color:var(--accent); margin-bottom: 8px;">🏦 Credit Scoring avec IA Explicable (XAI)</div>
+      <div style="color:var(--gray); margin-bottom: 20px; font-size:0.72rem;">Système de décision crédit — Conforme RGPD Article 22</div>
+      
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:0.72rem;">
+        <div style="background:#0d1b2a; padding:10px; border-radius:6px;">
+          <div style="color:var(--gray); margin-bottom:4px;">Durée crédit</div>
+          <div style="background:#1a2d45; height:4px; border-radius:2px; position:relative;">
+            <div style="background:var(--accent); height:100%; width:60%; border-radius:2px;"></div>
+          </div>
+          <div style="color:var(--white); margin-top:4px;">24 mois</div>
+        </div>
+        <div style="background:#0d1b2a; padding:10px; border-radius:6px;">
+          <div style="color:var(--gray); margin-bottom:4px;">Montant</div>
+          <div style="background:#1a2d45; height:4px; border-radius:2px;">
+            <div style="background:var(--accent); height:100%; width:40%; border-radius:2px;"></div>
+          </div>
+          <div style="color:var(--white); margin-top:4px;">3 000 DM</div>
+        </div>
+      </div>
+
+      <div style="margin-top: 16px; background: rgba(0,229,160,0.1); border: 1px solid rgba(0,229,160,0.3); border-radius: 8px; padding: 12px;">
+        <div style="color:var(--green); font-size:0.85rem; font-weight:600;">✅ ACCORDÉ — 78%</div>
+        <div style="color:var(--gray); font-size:0.7rem; margin-top:4px;">Score de crédit : 78%</div>
+        <div style="margin-top:8px; font-size:0.7rem; color:var(--gray);">
+          👍 Favorable: Statut compte (+0.14)<br>
+          👍 Favorable: Épargne (+0.09)<br>
+          👎 Défavorable: Durée (-0.05)
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">09 / 10</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 10 — CONCLUSIONS
+═══════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="section-label">Conclusions</div>
+  <h2 class="slide-title">Livrables &amp; <span>Perspectives</span></h2>
+
+  <div class="grid-2">
+    <div>
+      <ul class="conclusion-list">
+        <li>
+          <span class="check">🤖</span>
+          <div class="text">
+            <strong>Modèles performants — AUC ~0.80</strong>
+            <span>XGBoost + LightGBM sur German Credit. SMOTE pour gérer le déséquilibre. Comparaison avec modèles interprétables.</span>
+          </div>
+        </li>
+        <li>
+          <span class="check">🔍</span>
+          <div class="text">
+            <strong>Explicabilité complète — SHAP + LIME + DiCE</strong>
+            <span>Explications globales (summary plot), locales (waterfall), contrefactuelles ("que changer ?"). Comparaison rigoureuse SHAP vs LIME.</span>
+          </div>
+        </li>
+        <li>
+          <span class="check">⚖️</span>
+          <div class="text">
+            <strong>Audit Fairness — Fairlearn</strong>
+            <span>Biais âge/genre détecté et quantifié. Mitigation via ThresholdOptimizer. −64% d'Equalized Odds pour −4% d'accuracy.</span>
+          </div>
+        </li>
+        <li>
+          <span class="check">🖥️</span>
+          <div class="text">
+            <strong>Dashboard Gradio — Conforme RGPD Art. 22</strong>
+            <span>Interface interactive pour conseillers bancaires. Explication SHAP générée en temps-réel pour chaque client.</span>
+          </div>
+        </li>
+      </ul>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom: 16px;">
+        <h3>🚀 Extensions Possibles</h3>
+        <ul style="list-style: none; margin-top: 12px; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem;">
+          <li><span style="color:var(--accent)">→</span> <span style="color:var(--gray)"><strong style="color:var(--white)">Conformal Prediction</strong> : intervalles de confiance sur les scores</span></li>
+          <li><span style="color:var(--accent)">→</span> <span style="color:var(--gray)"><strong style="color:var(--white)">Monotonic Constraints</strong> : contraintes métier dans XGBoost</span></li>
+          <li><span style="color:var(--accent)">→</span> <span style="color:var(--gray)"><strong style="color:var(--white)">LLM Explanations</strong> : texte en langage naturel depuis SHAP</span></li>
+          <li><span style="color:var(--accent)">→</span> <span style="color:var(--gray)"><strong style="color:var(--white)">Lending Club Dataset</strong> : 2M+ d'entrées, cas réel US</span></li>
+          <li><span style="color:var(--accent)">→</span> <span style="color:var(--gray)"><strong style="color:var(--white)">EU AI Act</strong> : conformité avec le règlement IA européen 2024</span></li>
+        </ul>
+      </div>
+      <div class="card" style="background: linear-gradient(135deg, rgba(0,194,255,0.08), rgba(0,229,160,0.08)); border-color: rgba(0,194,255,0.2);">
+        <h3 style="color: var(--accent);">📚 Références clés</h3>
+        <ul style="list-style: none; margin-top: 10px; display: flex; flex-direction: column; gap: 6px; font-size: 0.78rem; color: var(--gray);">
+          <li>Lundberg & Lee (2017) — SHAP — <em>NeurIPS</em></li>
+          <li>Ribeiro et al. (2016) — LIME — <em>KDD</em></li>
+          <li>Mothilal et al. (2020) — DiCE — <em>ACM FAccT</em></li>
+          <li>Hardt et al. (2016) — Equalized Odds — <em>NeurIPS</em></li>
+          <li>Bird et al. (2020) — Fairlearn — <em>Microsoft Research</em></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">10 / 10</div>
+  <div class="ece-footer">C.6 — Credit Scoring avec IA Explicable (XAI) | ECE Paris 2026</div>
+</section>
+
+</body>
+</html>
